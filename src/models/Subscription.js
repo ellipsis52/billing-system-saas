@@ -3,8 +3,8 @@ const mongoose = require('mongoose');
 const subscriptionSchema = new mongoose.Schema({
   subscriptionId: {
     type: String,
-    unique: true,
     required: true,
+    unique: true,
   },
   userId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -20,24 +20,24 @@ const subscriptionSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  amount: {
-    type: Number,
-    required: true,
-    min: 0,
-  },
-  currency: {
+  planId: String,
+  status: {
     type: String,
-    default: 'USD',
+    enum: ['active', 'paused', 'cancelled', 'expired'],
+    default: 'active',
   },
   billingCycle: {
     type: String,
     enum: ['monthly', 'quarterly', 'semi-annual', 'annual'],
     default: 'monthly',
   },
-  status: {
+  amount: {
+    type: Number,
+    required: true,
+  },
+  currency: {
     type: String,
-    enum: ['active', 'paused', 'cancelled', 'pending', 'failed'],
-    default: 'pending',
+    default: 'USD',
   },
   startDate: {
     type: Date,
@@ -48,24 +48,29 @@ const subscriptionSchema = new mongoose.Schema({
     type: Date,
     required: true,
   },
-  paymentMethodId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Payment',
-  },
   autoRenew: {
     type: Boolean,
     default: true,
   },
-  failureCount: {
-    type: Number,
-    default: 0,
+  paymentMethod: {
+    gateway: String,
+    tokenId: String,
   },
-  lastPaymentDate: Date,
-  xeroSynced: {
-    type: Boolean,
-    default: false,
-  },
-  notes: String,
+  items: [{
+    description: String,
+    quantity: Number,
+    unitPrice: Number,
+  }],
+  billingHistory: [{
+    invoiceId: mongoose.Schema.Types.ObjectId,
+    amount: Number,
+    billedAt: Date,
+    paidAt: Date,
+  }],
+  cancellationReason: String,
+  cancelledAt: Date,
+  xeroSubscriptionId: String,
+  metadata: mongoose.Schema.Types.Mixed,
   createdAt: {
     type: Date,
     default: Date.now,
@@ -75,5 +80,10 @@ const subscriptionSchema = new mongoose.Schema({
     default: Date.now,
   },
 }, { timestamps: true });
+
+// Index for queries
+subscriptionSchema.index({ userId: 1, status: 1 });
+subscriptionSchema.index({ customerId: 1 });
+subscriptionSchema.index({ nextBillingDate: 1 });
 
 module.exports = mongoose.model('Subscription', subscriptionSchema);
